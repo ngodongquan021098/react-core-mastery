@@ -15,6 +15,7 @@ Chúng ta đang cùng nhau thực hiện chuỗi đào tạo "React Core Mastery
 Hiện tại trong source code đã hoàn thành:
 - Lesson 01: useState (đã có code trong src/lessons/01-useState và README.md)
 - Lesson 02: useReducer (đã có code trong src/lessons/02-useReducer và README.md)
+- Lesson 03: useRef (đã có code trong src/lessons/03-useRef và README.md)
 
 Bạn hãy đọc file PROGRESS.md ở thư mục gốc để nắm tiến độ và tuân thủ các NGUYÊN TẮC LÀM VIỆC sau:
 1. Đóng vai Senior/Staff React Mentor am hiểu cực sâu về React Internals (Fiber, Reconciliation, Scheduler, Closures).
@@ -22,7 +23,9 @@ Bạn hãy đọc file PROGRESS.md ở thư mục gốc để nắm tiến độ
 3. KHI HỎI ĐÁP: Hỏi từng câu một, đợi mình trả lời xong và chốt dứt điểm mới giao task tiếp theo.
 4. Mỗi khi kết thúc một bài, hỗ trợ tạo 1 file README.md ngắn gọn, súc tích trong folder bài đó để sau này ôn tập.
 
-Bây giờ chúng ta đang ở LESSON 03: useRef. Hãy đọc nội dung đề bài của Lesson 03 trong PROGRESS.md và bắt đầu hướng dẫn mình nhé!
+Bây giờ chúng ta đang ở LESSON 04: useEffect (ĐANG LÀM DỞ DANG). 
+Hôm qua chúng ta đã hoàn thành phần lý thuyết Execution Timing, Cleanup Timing, tái hiện bug Race Condition và fix bằng Boolean Flag Closure Pattern.
+Hôm nay hãy tiếp tục với thử thách Kỹ thuật 2: AbortController và "You Might Not Need an Effect" nhé!
 ```
 
 ---
@@ -40,10 +43,10 @@ Bây giờ chúng ta đang ở LESSON 03: useRef. Hãy đọc nội dung đề b
 ### Phase 1: State Primitives & Identity
 - [x] **Lesson 01: `useState`** (Fiber Linked List, Stale Closure, Automatic Batching, `flushSync`, `Object.is` & Bailout).
 - [x] **Lesson 02: `useReducer`** (State Machine, Dispatch Identity Stability, Lazy Initializer, Clean Reset Pattern).
-- [ ] **Lesson 03: `useRef`** ⏳ *(ĐANG THỰC HIỆN DỞ DANG)*
+- [x] **Lesson 03: `useRef`** (Fiber `memoizedState = { current }`, DOM Escape Hatch, Mutable Instance Variable, Rule of Purity, Page Visibility API & Throttling).
 
 ### Phase 2: Side-Effect & Render Phase Engine
-- [ ] **Lesson 04: `useEffect`** (Passive Effect, Cleanup Timing, Race Condition & AbortController, "You Might Not Need an Effect").
+- [ ] **Lesson 04: `useEffect`** ⏳ *(ĐANG THỰC HIỆN DỞ DANG)* (Passive Effect, Cleanup Timing, Race Condition & AbortController, "You Might Not Need an Effect").
 - [ ] **Lesson 05: `useLayoutEffect`** (Synchronous DOM Mutation Phase, Flashing Prevention, Layout Shift vs `useEffect`).
 - [ ] **Lesson 06: `useInsertionEffect`** (CSS-in-JS Engine, Run before DOM mutation, Purity restrictions).
 
@@ -73,30 +76,15 @@ Bây giờ chúng ta đang ở LESSON 03: useRef. Hãy đọc nội dung đề b
 
 ---
 
-## 📌 NỘI DUNG HIỆN TẠI ĐANG DỞ: LESSON 03 (`useRef`)
+## 📌 NỘI DUNG HIỆN TẠI ĐANG DỞ: LESSON 04 (`useEffect`)
 
-### 1. Kiến thức Core cần nắm:
-- **Fiber node:** `hook.memoizedState = { current: initialValue }`.
-- Thay đổi `ref.current` **KHÔNG** kích hoạt Scheduler, **KHÔNG** tạo Update Queue, **KHÔNG** làm re-render.
-- **2 vai trò chính:**
-  - *Vai trò 1:* DOM Escape Hatch (Focus, đo kích thước, cuộn trang).
-  - *Vai trò 2:* Mutable Instance Variable (Lưu timerId của `setInterval`, cờ `isMounted`, dữ liệu sống sót qua các lần render).
-- **Quy tắc vàng (Rule of Purity):** Tuyệt đối **không đọc/ghi `ref.current` trong Render Phase** (thân hàm component). Chỉ đọc/ghi trong Event Handler hoặc `useEffect`.
+### 1. Kiến thức đã hoàn thành:
+- **Execution Timing:** `Render Phase ➔ DOM Mutation ➔ Browser Paint ➔ useEffect` (Passive Effect qua Scheduler `MessageChannel`, Non-blocking UI cho 60fps).
+- **Cleanup Timing:** Cleanup của render cũ chạy ngay trước khi effect của render mới chạy (hoặc khi unmount), đóng gói closure snapshot của lần render trước.
+- **Race Condition Bug:** Tái hiện hiện tượng request User 1 (3000ms) đè lên User 2 (800ms) khi click liên tiếp.
+- **Pass-by-value vs Closure Scope:** Hiểu bản chất tại sao truyền primitive boolean `isIgnore` vào hàm không ăn, mà phải dùng `let ignore = false` bên trong callback `useEffect` để tận dụng Closure Execution Context độc lập cho từng render.
 
-### 2. Đề bài Challenge đang chờ thực hiện:
-Tạo file: `src/lessons/03-useRef/useRefLab.tsx`.
-
-Xây dựng ứng dụng **"Đồng hồ bấm giờ (Stopwatch) & DOM Focus"**:
-1. **Giao diện:**
-   - 1 biến `seconds` hiển thị số giây đang đếm (`useState`).
-   - 1 input text để nhập "Ghi chú vòng chạy".
-   - 1 dòng chữ: `Số lần Component Re-render: X`.
-   - 3 nút bấm:
-     - **Bắt đầu (Start):** Kích hoạt `setInterval` tăng `seconds` mỗi giây.
-     - **Dừng (Stop):** Dừng `setInterval`.
-     - **Reset & Focus:** Đưa `seconds` về 0, hủy timer, và **tự động focus con trỏ chuột vào ô input ghi chú**.
-2. **Thử thách kiến trúc:**
-   - Dùng `useRef` thứ 1 để lưu trữ `timerId` (tránh lưu vào state gây render thừa, và tránh dùng biến thường bị reset sau mỗi render).
-   - Dùng `useRef` thứ 2 để trỏ vào thẻ `<input>` (DOM Node).
-   - Đo số lần component re-render bằng cách nào an toàn nhất? (Tự trả lời khi viết code).
-
+### 2. Nội dung tiếp theo cần làm:
+1. **Kỹ thuật 2:** Tích hợp `AbortController` (`signal`) để hủy thực sự request trên tầng Network.
+2. **"You Might Not Need an Effect":** Phân tích các anti-patterns lạm dụng `useEffect` (Derived State, Reset form khi props đổi, xử lý User Action) và cách refactor về Pure Render.
+3. **Đúc kết:** Tạo file `src/lessons/04-useEffect/README.md`.
