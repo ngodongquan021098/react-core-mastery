@@ -45,13 +45,13 @@ Hôm nay hãy tiếp tục với thử thách Kỹ thuật 2: AbortController v�
 - [x] **Lesson 02: `useReducer`** (State Machine, Dispatch Identity Stability, Lazy Initializer, Clean Reset Pattern).
 - [x] **Lesson 03: `useRef`** (Fiber `memoizedState = { current }`, DOM Escape Hatch, Mutable Instance Variable, Rule of Purity, Page Visibility API & Throttling).
 
-### Phase 2: Side-Effect & Render Phase Engine
-- [ ] **Lesson 04: `useEffect`** ⏳ *(ĐANG THỰC HIỆN DỞ DANG)* (Passive Effect, Cleanup Timing, Race Condition & AbortController, "You Might Not Need an Effect").
-- [ ] **Lesson 05: `useLayoutEffect`** (Synchronous DOM Mutation Phase, Flashing Prevention, Layout Shift vs `useEffect`).
-- [ ] **Lesson 06: `useInsertionEffect`** (CSS-in-JS Engine, Run before DOM mutation, Purity restrictions).
+### Phase 2: Side-Effect & Render Phase Engine (HOÀN THÀNH 100%)
+- [x] **Lesson 04: `useEffect`** (Passive Effect, Cleanup Timing, Race Condition & AbortController, "You Might Not Need an Effect").
+- [x] **Lesson 05: `useLayoutEffect`** (Synchronous DOM Mutation Phase, Flashing Prevention, Layout Shift vs `useEffect`, SSR Warning).
+- [x] **Lesson 06: `useInsertionEffect`** (CSS-in-JS Engine, Run before DOM mutation, Purity restrictions).
 
 ### Phase 3: Memoization & Referential Stability
-- [ ] **Lesson 07: `useMemo`** (Cache Invalidation, Cost vs Benefit, Khi nào KHÔNG nên memo).
+- [ ] **Lesson 07: `useMemo`** ⏳ *(BÀI TIẾP THEO)* (Cache Invalidation, Cost vs Benefit, Khi nào KHÔNG nên memo).
 - [ ] **Lesson 08: `useCallback`** (Bẫy Stale Closure trong memoized callback, Function identity).
 - [ ] **Lesson 09: `React.memo`** (Shallow Prop Comparison, Custom `arePropsEqual`, Vỡ memo do inline object/children).
 
@@ -76,15 +76,20 @@ Hôm nay hãy tiếp tục với thử thách Kỹ thuật 2: AbortController v�
 
 ---
 
-## 📌 NỘI DUNG HIỆN TẠI ĐANG DỞ: LESSON 04 (`useEffect`)
+## 📌 NỘI DUNG TIẾP THEO: LESSON 07 (`useMemo`)
 
-### 1. Kiến thức đã hoàn thành:
-- **Execution Timing:** `Render Phase ➔ DOM Mutation ➔ Browser Paint ➔ useEffect` (Passive Effect qua Scheduler `MessageChannel`, Non-blocking UI cho 60fps).
-- **Cleanup Timing:** Cleanup của render cũ chạy ngay trước khi effect của render mới chạy (hoặc khi unmount), đóng gói closure snapshot của lần render trước.
-- **Race Condition Bug:** Tái hiện hiện tượng request User 1 (3000ms) đè lên User 2 (800ms) khi click liên tiếp.
-- **Pass-by-value vs Closure Scope:** Hiểu bản chất tại sao truyền primitive boolean `isIgnore` vào hàm không ăn, mà phải dùng `let ignore = false` bên trong callback `useEffect` để tận dụng Closure Execution Context độc lập cho từng render.
+### 1. Kiến thức Core cần nắm:
+- **Cơ chế lưu trữ trong Fiber Node:**
+  `hook.memoizedState = [computedValue, nextDeps]`
+  Mỗi lần render, React chạy thuật toán `areHookInputsEqual` so sánh từng phần tử trong deps bằng `Object.is`.
+- **Cái bẫy tối ưu hóa sớm (Premature Optimization):**
+  - Chi phí của việc gọi `useMemo`: Khởi tạo mảng deps, duyệt so sánh `Object.is`, tốn thêm bộ nhớ RAM để lưu cache.
+  - Khi nào phép tính mới thực sự được gọi là "nặng" (Expensive Calculation)? Cách dùng `console.time()` để đo đạc thực tế (Benchmark).
+- **Trường hợp sống còn bắt buộc phải dùng `useMemo` (Referential Stability):**
+  - Không phải để tối ưu tính toán, mà để **giữ nguyên địa chỉ ô nhớ (Reference)** của một Object/Array khi truyền vào:
+    1. Dependency array của một `useEffect` khác.
+    2. Props của một component con được bọc bởi `React.memo`.
 
-### 2. Nội dung tiếp theo cần làm:
-1. **Kỹ thuật 2:** Tích hợp `AbortController` (`signal`) để hủy thực sự request trên tầng Network.
-2. **"You Might Not Need an Effect":** Phân tích các anti-patterns lạm dụng `useEffect` (Derived State, Reset form khi props đổi, xử lý User Action) và cách refactor về Pure Render.
-3. **Đúc kết:** Tạo file `src/lessons/04-useEffect/README.md`.
+### 2. Thử thách Challenge:
+- Benchmark phép tính lọc danh sách 10.000 items: Khi nào `useMemo` mang lại giá trị thật, khi nào gây phản tác dụng tốn thêm chi phí.
+- Tái hiện lỗi "Vỡ vòng lặp vô tận (Infinite Re-render)" trong `useEffect` khi dependency là một object không được memoize.
